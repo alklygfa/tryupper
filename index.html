@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPPER - داش بورد المحاسبة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+        * { font-family: 'Cairo', sans-serif; }
+        
+        /* Light theme (default) */
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --gradient-from: #1e3a8a;
+            --gradient-to: #3b82f6;
+        }
+        
+        /* Dark theme */
+        [data-theme="dark"] {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --gradient-from: #1e40af;
+            --gradient-to: #3b82f6;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .bg-card {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+        
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+        
+        .gradient-bg { 
+            background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%); 
+        }
+        
+        .card-shadow { 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+        }
+        
+        .hover-scale { 
+            transition: transform 0.2s; 
+        }
+        
+        .hover-scale:hover { 
+            transform: scale(1.02); 
+        }
+        
+        [data-theme="dark"] .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">🩲 UPPER - داش بورد المحاسبة</h1>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <button onclick="toggleTheme()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-2 rounded-lg transition-colors">
+                        <span id="themeIcon">🌙</span>
+                    </button>
+                    <button onclick="showSettings()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                        ⚙️ الإعدادات
+                    </button>
+                    <span class="text-sm">مرحباً، عبدالرحمن الخليفة</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Quick Stats -->
+        <div class="mb-4">
+            <h2 class="text-xl font-semibold text-center" id="currentMonthTitle">إحصائيات الشهر الحالي</h2>
+        </div>
+        
+        <!-- Monthly Goal and Inventory -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Monthly Goal -->
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">🎯 هدف الشهر</h3>
+                        <p class="text-2xl font-bold" id="monthlyGoal">0.000 د.ك</p>
+                        <p class="text-sm opacity-90">مبني على أداء الشهر الماضي + 10%</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-90">التقدم</p>
+                        <p class="text-xl font-bold" id="goalProgress">0%</p>
+                        <div class="w-32 bg-white bg-opacity-30 rounded-full h-2 mt-2">
+                            <div id="goalProgressBar" class="bg-white h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Inventory -->
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6 card-shadow">
+                <h3 class="text-lg font-semibold mb-4">📦 المخزون الحالي</h3>
+                <div id="inventoryAlerts" class="mb-4"></div>
+                <div class="space-y-3" id="currentInventory">
+                    <!-- Inventory items will be loaded here -->
+                </div>
+                <button onclick="showInventory()" class="mt-4 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors text-sm">
+                    📋 إدارة المخزون
+                </button>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-card rounded-lg p-6 card-shadow hover-scale border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-secondary text-sm">إجمالي المبيعات</p>
+                        <p class="text-2xl font-bold text-green-600" id="totalSales">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <span class="text-2xl">💰</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-lg p-6 card-shadow hover-scale border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-secondary text-sm">صافي الربح</p>
+                        <p class="text-2xl font-bold text-blue-600" id="netProfit">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <span class="text-2xl">📈</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-lg p-6 card-shadow hover-scale border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-secondary text-sm">إجمالي الرسوم</p>
+                        <p class="text-2xl font-bold text-red-600" id="totalFees">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <span class="text-2xl">💳</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-lg p-6 card-shadow hover-scale border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-secondary text-sm">عدد القطع المباعة</p>
+                        <p class="text-2xl font-bold text-purple-600" id="totalPieces">0</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <span class="text-2xl">🩲</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Stats -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-card rounded-lg p-6 card-shadow border">
+                <h3 class="text-lg font-semibold mb-4">إحصائيات المنتجات</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div class="w-4 h-4 bg-white border-2 border-gray-400 rounded"></div>
+                            <span>بوكسر أبيض</span>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold" id="whiteCount">0 قطعة</p>
+                            <p class="text-sm text-secondary" id="whiteRevenue">0.000 د.ك</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div class="w-4 h-4 bg-black rounded"></div>
+                            <span>بوكسر أسود</span>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold" id="blackCount">0 قطعة</p>
+                            <p class="text-sm text-secondary" id="blackRevenue">0.000 د.ك</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-lg p-6 card-shadow border">
+                <h3 class="text-lg font-semibold mb-4">توزيع طرق الدفع</h3>
+                <canvas id="paymentChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+            <button onclick="showAddSale()" class="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                ➕ إضافة مبيعة
+            </button>
+            <button onclick="showReports()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                📊 التقارير
+            </button>
+            <button onclick="showInvoices()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                📋 الفواتير
+            </button>
+            <button onclick="showInventory()" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                📦 المخزون
+            </button>
+            <button onclick="exportToExcel()" class="bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                📊 تصدير إكسل
+            </button>
+            <button onclick="showSettings()" class="bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                ⚙️ الإعدادات
+            </button>
+        </div>
+
+        <!-- Recent Sales -->
+        <div class="bg-card rounded-lg card-shadow border">
+            <div class="p-6 border-b" style="border-color: var(--border-color)">
+                <h3 class="text-lg font-semibold">المبيعات الأخيرة</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">رقم الفاتورة</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">التاريخ</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">المنتجات</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">طريقة الدفع</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">المبلغ الإجمالي</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">إجمالي الرسوم</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">صافي الربح</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-secondary uppercase">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTable" class="divide-y" style="divide-color: var(--border-color)">
+                        <!-- Sales will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Sale Modal -->
+    <div id="addSaleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-2xl border">
+                <h3 class="text-lg font-semibold mb-4">إضافة مبيعة جديدة</h3>
+                <form id="saleForm">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">رقم الفاتورة</label>
+                            <input type="text" id="invoiceNumber" placeholder="اختياري - سيتم إنشاؤه تلقائياً" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">طريقة الدفع</label>
+                            <select id="paymentMethod" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                                <option value="knet">K-Net</option>
+                                <option value="visa">Visa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">التاريخ</label>
+                            <input type="date" id="saleDate" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3">المنتجات:</h4>
+                        <div id="productsContainer">
+                            <div class="product-row grid grid-cols-1 md:grid-cols-4 gap-3 mb-3 p-3 border rounded-lg" style="border-color: var(--border-color)">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">اللون</label>
+                                    <select class="product-color w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                                        <option value="">اختار</option>
+                                        <option value="white">أبيض</option>
+                                        <option value="black">أسود</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">النوع</label>
+                                    <select class="product-type w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                                        <option value="single">قطعة واحدة</option>
+                                        <option value="bundle">3 قطع (باندل)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">الكمية</label>
+                                    <input type="number" class="product-quantity w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" min="1" value="1" required>
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" onclick="removeProduct(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">حذف</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addProduct()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">➕ إضافة منتج</button>
+                    </div>
+
+                    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-semibold mb-2">ملخص المبيعة:</h4>
+                        <div class="text-sm space-y-1">
+                            <p>المبلغ الإجمالي: <span id="previewTotal">0.000 د.ك</span></p>
+                            <p>رسوم شوبيفاي: <span id="previewShopify">0.000 د.ك</span></p>
+                            <p>رسوم الدفع: <span id="previewPayment">0.000 د.ك</span></p>
+                            <p>إجمالي الرسوم: <span id="previewTotalFees">0.000 د.ك</span></p>
+                            <p class="font-semibold text-green-600">صافي الربح: <span id="previewNet">0.000 د.ك</span></p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                            حفظ المبيعة
+                        </button>
+                        <button type="button" onclick="hideAddSale()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-md border">
+                <h3 class="text-lg font-semibold mb-4">إعدادات النظام</h3>
+                <form id="settingsForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">سعر البوكسر الواحد (د.ك)</label>
+                        <input type="number" id="singlePrice" step="0.001" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">سعر الباندل (3 قطع) (د.ك)</label>
+                        <input type="number" id="bundlePrice" step="0.001" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">نسبة شوبيفاي (%)</label>
+                        <input type="number" id="shopifyFee" step="0.1" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">نسبة K-Net (%)</label>
+                        <input type="number" id="knetFee" step="0.1" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">نسبة Visa (%)</label>
+                        <input type="number" id="visaFee" step="0.1" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    
+                    <div class="mb-4 p-4 border-t" style="border-color: var(--border-color)">
+                        <h4 class="font-semibold mb-3 text-red-600">منطقة الخطر</h4>
+                        <button type="button" onclick="confirmReset()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-semibold transition-colors mb-2">
+                            🗑️ مسح جميع البيانات
+                        </button>
+                        <p class="text-xs text-secondary" id="lastResetDate">آخر إعادة تعيين: لم يتم بعد</p>
+                    </div>
+                    
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                            حفظ الإعدادات
+                        </button>
+                        <button type="button" onclick="hideSettings()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Modal -->
+    <div id="reportsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-6xl border max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold">📊 التقارير المفصلة</h3>
+                    <button onclick="hideReports()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                
+                <!-- Date Filter -->
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">الشهر</label>
+                            <select id="reportMonth" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                                <option value="all">جميع الشهور</option>
+                                <option value="0">يناير</option>
+                                <option value="1">فبراير</option>
+                                <option value="2">مارس</option>
+                                <option value="3">أبريل</option>
+                                <option value="4">مايو</option>
+                                <option value="5">يونيو</option>
+                                <option value="6">يوليو</option>
+                                <option value="7">أغسطس</option>
+                                <option value="8">سبتمبر</option>
+                                <option value="9">أكتوبر</option>
+                                <option value="10">نوفمبر</option>
+                                <option value="11">ديسمبر</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">السنة</label>
+                            <select id="reportYear" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                                <option value="all">جميع السنوات</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button onclick="updateReports()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                                تحديث التقرير
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-2">إجمالي المبيعات</h4>
+                        <p class="text-2xl font-bold" id="reportRevenue">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-2">صافي الأرباح</h4>
+                        <p class="text-2xl font-bold" id="reportProfit">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-2">إجمالي المصاريف</h4>
+                        <p class="text-2xl font-bold" id="reportExpenses">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-2">عدد القطع</h4>
+                        <p class="text-2xl font-bold" id="reportPieces">0</p>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="bg-card border rounded-lg p-6 mb-6" style="border-color: var(--border-color)">
+                    <h4 class="text-lg font-semibold mb-4">الرسم البياني المالي</h4>
+                    <canvas id="financialChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-card border rounded-lg p-6" style="border-color: var(--border-color)">
+                        <h4 class="font-semibold mb-4">أفضل يوم مبيعات</h4>
+                        <p class="text-lg" id="bestDay">لا يوجد</p>
+                        <p class="text-sm text-secondary">الإيرادات: <span id="bestDayRevenue">0.000 د.ك</span></p>
+                    </div>
+                    <div class="bg-card border rounded-lg p-6" style="border-color: var(--border-color)">
+                        <h4 class="font-semibold mb-4">متوسط قيمة الطلب</h4>
+                        <p class="text-lg" id="avgOrderValue">0.000 د.ك</p>
+                        <p class="text-sm text-secondary">للفترة المحددة</p>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="hideReports()" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded-lg font-semibold transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoiceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg p-8 w-full max-w-2xl border shadow-2xl" style="direction: rtl;">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">🩲 UPPER</h2>
+                    <h3 class="text-lg font-semibold text-gray-600">فاتورة مبيعات</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6 text-sm">
+                    <div>
+                        <p class="font-semibold text-gray-700">رقم الفاتورة:</p>
+                        <p id="invoiceNum" class="text-blue-600 font-bold">#0001</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700">التاريخ:</p>
+                        <p id="invoiceDate" class="text-gray-600">2024-01-01</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700">طريقة الدفع:</p>
+                        <p id="invoicePayment" class="text-gray-600">K-Net</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700">العميل:</p>
+                        <p class="text-gray-600">عميل UPPER</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-b border-gray-200 py-4 mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-right py-2 font-semibold text-gray-700">المنتج</th>
+                                <th class="text-center py-2 font-semibold text-gray-700">الكمية</th>
+                                <th class="text-center py-2 font-semibold text-gray-700">السعر</th>
+                                <th class="text-center py-2 font-semibold text-gray-700">المجموع</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceProducts">
+                            <!-- Products will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="space-y-2 mb-6 text-sm">
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-gray-700">المجموع الفرعي:</span>
+                        <span id="invoiceSubtotal" class="font-bold text-gray-800">0.000 د.ك</span>
+                    </div>
+                    <div class="flex justify-between text-red-600">
+                        <span>رسوم شوبيفاي (<span id="invoiceShopifyRate">2.0</span>%):</span>
+                        <span id="invoiceShopifyFee">0.000 د.ك</span>
+                    </div>
+                    <div class="flex justify-between text-red-600">
+                        <span>رسوم الدفع (<span id="invoicePaymentRate">0.5</span>%):</span>
+                        <span id="invoicePaymentFee">0.000 د.ك</span>
+                    </div>
+                    <div class="flex justify-between text-red-600 border-t border-gray-200 pt-2">
+                        <span class="font-semibold">إجمالي الرسوم:</span>
+                        <span id="invoiceTotalFees" class="font-bold">0.000 د.ك</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold text-green-600 border-t-2 border-gray-300 pt-2">
+                        <span>صافي الربح:</span>
+                        <span id="invoiceNetProfit">0.000 د.ك</span>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs text-gray-500 mb-6">
+                    <p>شكراً لتعاملكم معنا</p>
+                    <p>UPPER - ملابس داخلية عالية الجودة</p>
+                </div>
+
+                <div class="flex space-x-4 space-x-reverse">
+                    <button onclick="printInvoice()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                        🖨️ طباعة
+                    </button>
+                    <button onclick="hideInvoice()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Modal -->
+    <div id="invoicesModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-6xl border max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold">📋 إدارة الفواتير</h3>
+                    <button onclick="hideInvoices()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                
+                <!-- Date Filter -->
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">من تاريخ</label>
+                            <input type="date" id="invoiceFromDate" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">إلى تاريخ</label>
+                            <input type="date" id="invoiceToDate" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                        </div>
+                        <div>
+                            <button onclick="filterInvoices()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                                🔍 فلترة
+                            </button>
+                        </div>
+                        <div>
+                            <button onclick="clearInvoiceFilter()" class="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                                🗑️ مسح الفلتر
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoices Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-100 dark:bg-blue-900 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-blue-800 dark:text-blue-200">عدد الفواتير</h4>
+                        <p class="text-2xl font-bold text-blue-600" id="filteredInvoicesCount">0</p>
+                    </div>
+                    <div class="bg-green-100 dark:bg-green-900 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-green-800 dark:text-green-200">إجمالي المبيعات</h4>
+                        <p class="text-xl font-bold text-green-600" id="filteredInvoicesTotal">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-red-100 dark:bg-red-900 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-red-800 dark:text-red-200">إجمالي الرسوم</h4>
+                        <p class="text-xl font-bold text-red-600" id="filteredInvoicesFees">0.000 د.ك</p>
+                    </div>
+                    <div class="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg text-center">
+                        <h4 class="font-semibold text-purple-800 dark:text-purple-200">صافي الربح</h4>
+                        <p class="text-xl font-bold text-purple-600" id="filteredInvoicesProfit">0.000 د.ك</p>
+                    </div>
+                </div>
+                
+                <!-- Invoices Table -->
+                <div class="bg-card border rounded-lg overflow-hidden" style="border-color: var(--border-color)">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">رقم الفاتورة</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">التاريخ</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">المنتجات</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">طريقة الدفع</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">المبلغ الإجمالي</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">صافي الربح</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTableBody" class="divide-y" style="divide-color: var(--border-color)">
+                                <!-- Invoices will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <button onclick="hideInvoices()" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded-lg font-semibold transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Sale Modal -->
+    <div id="editSaleModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-2xl border">
+                <h3 class="text-lg font-semibold mb-4">تعديل الفاتورة</h3>
+                <form id="editSaleForm">
+                    <input type="hidden" id="editSaleId">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">رقم الفاتورة</label>
+                            <input type="text" id="editInvoiceNumber" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">طريقة الدفع</label>
+                            <select id="editPaymentMethod" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                                <option value="knet">K-Net</option>
+                                <option value="visa">Visa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">التاريخ</label>
+                            <input type="date" id="editSaleDate" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card" style="border-color: var(--border-color)" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3">المنتجات:</h4>
+                        <div id="editProductsContainer">
+                            <!-- Products will be loaded here -->
+                        </div>
+                        <button type="button" onclick="addEditProduct()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">➕ إضافة منتج</button>
+                    </div>
+
+                    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-semibold mb-2">ملخص المبيعة:</h4>
+                        <div class="text-sm space-y-1">
+                            <p>المبلغ الإجمالي: <span id="editPreviewTotal">0.000 د.ك</span></p>
+                            <p>رسوم شوبيفاي: <span id="editPreviewShopify">0.000 د.ك</span></p>
+                            <p>رسوم الدفع: <span id="editPreviewPayment">0.000 د.ك</span></p>
+                            <p>إجمالي الرسوم: <span id="editPreviewTotalFees">0.000 د.ك</span></p>
+                            <p class="font-semibold text-green-600">صافي الربح: <span id="editPreviewNet">0.000 د.ك</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                            حفظ التعديلات
+                        </button>
+                        <button type="button" onclick="hideEditSale()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Modal -->
+    <div id="inventoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-4xl border max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold">📦 إدارة المخزون</h3>
+                    <button onclick="hideInventory()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                
+                <!-- Add Product Form -->
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+                    <h4 class="font-semibold mb-4">إضافة منتج جديد</h4>
+                    <form id="addProductForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">اسم المنتج</label>
+                            <input type="text" id="productName" placeholder="مثال: بوكسر قطني" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">اللون</label>
+                            <select id="productColor" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                                <option value="white">أبيض</option>
+                                <option value="black">أسود</option>
+                                <option value="gray">رمادي</option>
+                                <option value="blue">أزرق</option>
+                                <option value="red">أحمر</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">الكمية (قطع)</label>
+                            <input type="number" id="productQuantity" min="0" value="100" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                                ➕ إضافة
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Products List -->
+                <div class="bg-card border rounded-lg overflow-hidden" style="border-color: var(--border-color)">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">الصورة</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">اسم المنتج</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">اللون</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">عدد القطع</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">باندل متاح</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">الحالة</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-secondary uppercase">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody" class="divide-y" style="divide-color: var(--border-color)">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <button onclick="hideInventory()" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded-lg font-semibold transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-md border">
+                <h3 class="text-lg font-semibold mb-4">تعديل المنتج</h3>
+                <form id="editProductForm">
+                    <input type="hidden" id="editProductId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">صورة المنتج</label>
+                        <div class="flex items-center space-x-4 space-x-reverse">
+                            <div id="currentProductImage" class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                🩲
+                            </div>
+                            <input type="file" id="productImageInput" accept="image/*" class="flex-1 px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">اسم المنتج</label>
+                        <input type="text" id="editProductName" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">اللون</label>
+                        <select id="editProductColor" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                            <option value="white">أبيض</option>
+                            <option value="black">أسود</option>
+                            <option value="gray">رمادي</option>
+                            <option value="blue">أزرق</option>
+                            <option value="red">أحمر</option>
+                        </select>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">عدد القطع المتاحة</label>
+                        <input type="number" id="editProductQuantity" min="0" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)" required>
+                    </div>
+                    
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                            حفظ التعديلات
+                        </button>
+                        <button type="button" onclick="hideEditProduct()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-md border">
+                <h3 class="text-lg font-semibold mb-4">📊 تصدير البيانات</h3>
+                <p class="text-sm text-secondary mb-4">اختر الفترة التي تريد تصديرها:</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">الشهر</label>
+                    <select id="exportMonth" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                        <option value="all">جميع الشهور</option>
+                        <option value="0">يناير</option>
+                        <option value="1">فبراير</option>
+                        <option value="2">مارس</option>
+                        <option value="3">أبريل</option>
+                        <option value="4">مايو</option>
+                        <option value="5">يونيو</option>
+                        <option value="6">يوليو</option>
+                        <option value="7">أغسطس</option>
+                        <option value="8">سبتمبر</option>
+                        <option value="9">أكتوبر</option>
+                        <option value="10">نوفمبر</option>
+                        <option value="11">ديسمبر</option>
+                    </select>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2">السنة</label>
+                    <select id="exportYear" class="w-full px-3 py-2 border rounded-md bg-card" style="border-color: var(--border-color)">
+                        <option value="all">جميع السنوات</option>
+                    </select>
+                </div>
+                
+                <div class="flex space-x-4 space-x-reverse">
+                    <button onclick="performExport()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                        📥 تصدير الآن
+                    </button>
+                    <button onclick="hideExportModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="resetModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card rounded-lg p-6 w-full max-w-md border">
+                <h3 class="text-lg font-semibold mb-4 text-red-600">⚠️ تأكيد مسح البيانات</h3>
+                <p class="mb-6 text-secondary">هل أنت متأكد من أنك تريد مسح جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!</p>
+                <div class="flex space-x-4 space-x-reverse">
+                    <button onclick="resetAllData()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-semibold transition-colors">
+                        نعم، امسح البيانات
+                    </button>
+                    <button onclick="hideReset()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md font-semibold transition-colors">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default settings
+        let settings = JSON.parse(localStorage.getItem('upperSettings')) || {
+            singlePrice: 5.5,
+            bundlePrice: 15.0,
+            shopifyFee: 2.0,
+            knetFee: 0.5,
+            visaFee: 2.5,
+            theme: 'light',
+            lastReset: null
+        };
+
+        // Sales data
+        let sales = JSON.parse(localStorage.getItem('upperSales')) || [];
+
+        // Inventory data - simplified to pieces only
+        let inventory = JSON.parse(localStorage.getItem('upperInventory')) || [
+            { id: 1, name: 'بوكسر أبيض', color: 'white', quantity: 150, image: null },
+            { id: 2, name: 'بوكسر أسود', color: 'black', quantity: 120, image: null }
+        ];
+
+        // Charts
+        let paymentChart;
+        let financialChart;
+
+        function initCharts() {
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+            paymentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['K-Net', 'Visa'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#10B981', '#3B82F6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePaymentChart() {
+            const knetCount = sales.filter(s => s.paymentMethod === 'knet').length;
+            const visaCount = sales.filter(s => s.paymentMethod === 'visa').length;
+            
+            paymentChart.data.datasets[0].data = [knetCount, visaCount];
+            paymentChart.update();
+        }
+
+        function calculateSale(products, paymentMethod) {
+            let basePrice = 0;
+            let totalPieces = 0;
+            let whiteCount = 0;
+            let blackCount = 0;
+
+            products.forEach(product => {
+                const price = product.type === 'single' ? settings.singlePrice : settings.bundlePrice;
+                const itemTotal = price * product.quantity;
+                basePrice += itemTotal;
+
+                if (product.type === 'single') {
+                    totalPieces += product.quantity;
+                    if (product.color === 'white') whiteCount += product.quantity;
+                    else blackCount += product.quantity;
+                } else {
+                    totalPieces += product.quantity * 3;
+                    if (product.color === 'white') whiteCount += product.quantity * 3;
+                    else blackCount += product.quantity * 3;
+                }
+            });
+
+            const shopifyFees = basePrice * (settings.shopifyFee / 100);
+            const paymentFees = basePrice * ((paymentMethod === 'knet' ? settings.knetFee : settings.visaFee) / 100);
+            const totalFees = shopifyFees + paymentFees;
+            const netProfit = basePrice - totalFees;
+
+            return {
+                basePrice,
+                shopifyFees,
+                paymentFees,
+                totalFees,
+                netProfit,
+                totalPieces,
+                whiteCount,
+                blackCount
+            };
+        }
+
+        function updatePreview() {
+            const products = getProductsFromForm();
+            const paymentMethod = document.getElementById('paymentMethod').value;
+
+            if (products.length === 0) return;
+
+            const calc = calculateSale(products, paymentMethod);
+
+            document.getElementById('previewTotal').textContent = `${calc.basePrice.toFixed(3)} د.ك`;
+            document.getElementById('previewShopify').textContent = `${calc.shopifyFees.toFixed(3)} د.ك`;
+            document.getElementById('previewPayment').textContent = `${calc.paymentFees.toFixed(3)} د.ك`;
+            document.getElementById('previewTotalFees').textContent = `${calc.totalFees.toFixed(3)} د.ك`;
+            document.getElementById('previewNet').textContent = `${calc.netProfit.toFixed(3)} د.ك`;
+        }
+
+        function getProductsFromForm() {
+            const products = [];
+            const rows = document.querySelectorAll('.product-row');
+            let hasError = false;
+            
+            // First, collect all products to calculate total required pieces per color
+            const tempProducts = [];
+            rows.forEach(row => {
+                const color = row.querySelector('.product-color').value;
+                const type = row.querySelector('.product-type').value;
+                const quantity = parseInt(row.querySelector('.product-quantity').value) || 0;
+                
+                if (quantity > 0 && color !== '') {
+                    tempProducts.push({ color, type, quantity });
+                }
+            });
+            
+            // Calculate total required pieces per color
+            const requiredByColor = {};
+            tempProducts.forEach(product => {
+                if (!requiredByColor[product.color]) {
+                    requiredByColor[product.color] = 0;
+                }
+                
+                const piecesNeeded = product.type === 'single' ? product.quantity : product.quantity * 3;
+                requiredByColor[product.color] += piecesNeeded;
+            });
+            
+            // Check inventory availability for each color
+            for (const color in requiredByColor) {
+                const inventoryProduct = inventory.find(p => p.color === color);
+                const colorName = color === 'white' ? 'الأبيض' : 'الأسود';
+                const totalRequired = requiredByColor[color];
+                const available = inventoryProduct ? inventoryProduct.quantity : 0;
+                
+                if (available < totalRequired) {
+                    const availableBundles = Math.floor(available / 3);
+                    const availableSingles = available;
+                    
+                    alert(`❌ المخزون غير كافي للون ${colorName}!\n\nالمطلوب إجمالي: ${totalRequired} قطعة\nالمتاح: ${available} قطعة فقط\n\nيمكنك طلب:\n• ${availableSingles} قطعة منفردة\n• ${availableBundles} باندل (${availableBundles * 3} قطعة)\n\nيرجى تعديل الكمية.`);
+                    hasError = true;
+                    break;
+                }
+            }
+            
+            // If no errors, return the products
+            if (!hasError) {
+                return tempProducts;
+            }
+            
+            // Return empty array if there's an error to prevent form submission
+            return [];
+        }
+
+        function addProduct() {
+            const container = document.getElementById('productsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'product-row grid grid-cols-1 md:grid-cols-4 gap-3 mb-3 p-3 border rounded-lg';
+            newRow.style.borderColor = 'var(--border-color)';
+            
+            newRow.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium mb-1">اللون</label>
+                    <select class="product-color w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                        <option value="">اختار</option>
+                        <option value="white">أبيض</option>
+                        <option value="black">أسود</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">النوع</label>
+                    <select class="product-type w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                        <option value="single">قطعة واحدة</option>
+                        <option value="bundle">3 قطع (باندل)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">الكمية</label>
+                    <input type="number" class="product-quantity w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" min="1" value="1" required>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="removeProduct(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">حذف</button>
+                </div>
+            `;
+            
+            container.appendChild(newRow);
+            attachProductEvents(newRow);
+        }
+
+        function removeProduct(button) {
+            const rows = document.querySelectorAll('.product-row');
+            if (rows.length > 1) {
+                button.closest('.product-row').remove();
+                updatePreview();
+            }
+        }
+
+        function attachProductEvents(row) {
+            const inputs = row.querySelectorAll('.product-color, .product-type, .product-quantity');
+            inputs.forEach(input => {
+                input.addEventListener('change', updatePreview);
+                input.addEventListener('input', updatePreview);
+            });
+        }
+
+        function loadSales() {
+            const tbody = document.getElementById('salesTable');
+            tbody.innerHTML = '';
+            
+            sales.slice(-20).reverse().forEach(sale => {
+                const row = document.createElement('tr');
+                
+                // Format products display
+                let productsDisplay = '';
+                sale.products.forEach(product => {
+                    const colorName = product.color === 'white' ? 'أبيض' : 'أسود';
+                    const typeName = product.type === 'single' ? 'قطعة واحدة' : 'باندل (3 قطع)';
+                    productsDisplay += `${product.quantity} بوكسر ${colorName} - ${typeName}<br>`;
+                });
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="showInvoice(${sale.id})" class="text-blue-600 hover:text-blue-900 font-medium">#${sale.invoiceNumber || sale.id}</button>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${sale.date}</td>
+                    <td class="px-6 py-4 text-sm">${productsDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${sale.paymentMethod === 'knet' ? 'K-Net' : 'Visa'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${sale.basePrice.toFixed(3)} د.ك</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">${sale.totalFees.toFixed(3)} د.ك</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${sale.netProfit.toFixed(3)} د.ك</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                        <button onclick="showInvoice(${sale.id})" class="text-blue-600 hover:text-blue-900 ml-2">عرض</button>
+                        <button onclick="deleteSale(${sale.id})" class="text-red-600 hover:text-red-900">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats() {
+            // Get current month sales only
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const thisMonthSales = sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+            });
+
+            const totalSales = thisMonthSales.reduce((sum, s) => sum + s.basePrice, 0);
+            const totalFees = thisMonthSales.reduce((sum, s) => sum + s.totalFees, 0);
+            const netProfit = thisMonthSales.reduce((sum, s) => sum + s.netProfit, 0);
+            const totalPieces = thisMonthSales.reduce((sum, s) => sum + s.totalPieces, 0);
+
+            document.getElementById('totalSales').textContent = `${totalSales.toFixed(3)} د.ك`;
+            document.getElementById('totalFees').textContent = `${totalFees.toFixed(3)} د.ك`;
+            document.getElementById('netProfit').textContent = `${netProfit.toFixed(3)} د.ك`;
+            document.getElementById('totalPieces').textContent = totalPieces;
+
+            // Product stats for current month
+            const whiteCount = thisMonthSales.reduce((sum, s) => sum + s.whiteCount, 0);
+            const blackCount = thisMonthSales.reduce((sum, s) => sum + s.blackCount, 0);
+
+            const whiteRevenue = thisMonthSales.reduce((sum, s) => {
+                return sum + s.products.filter(p => p.color === 'white').reduce((pSum, p) => {
+                    const price = p.type === 'single' ? settings.singlePrice : settings.bundlePrice;
+                    return pSum + (price * p.quantity);
+                }, 0);
+            }, 0);
+
+            const blackRevenue = thisMonthSales.reduce((sum, s) => {
+                return sum + s.products.filter(p => p.color === 'black').reduce((pSum, p) => {
+                    const price = p.type === 'single' ? settings.singlePrice : settings.bundlePrice;
+                    return pSum + (price * p.quantity);
+                }, 0);
+            }, 0);
+
+            document.getElementById('whiteCount').textContent = `${whiteCount} قطعة`;
+            document.getElementById('blackCount').textContent = `${blackCount} قطعة`;
+            document.getElementById('whiteRevenue').textContent = `${whiteRevenue.toFixed(3)} د.ك`;
+            document.getElementById('blackRevenue').textContent = `${blackRevenue.toFixed(3)} د.ك`;
+
+            // Calculate monthly goal based on last month + 10%
+            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            
+            const lastMonthSales = sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate.getMonth() === lastMonth && saleDate.getFullYear() === lastMonthYear;
+            });
+
+            const lastMonthTotal = lastMonthSales.reduce((sum, s) => sum + s.basePrice, 0);
+            const monthlyGoal = lastMonthTotal * 1.1; // Add 10%
+            
+            document.getElementById('monthlyGoal').textContent = `${monthlyGoal.toFixed(3)} د.ك`;
+            
+            // Calculate progress percentage
+            const progressPercentage = monthlyGoal > 0 ? Math.min((totalSales / monthlyGoal) * 100, 100) : 0;
+            document.getElementById('goalProgress').textContent = `${progressPercentage.toFixed(1)}%`;
+            document.getElementById('goalProgressBar').style.width = `${progressPercentage}%`;
+
+            updatePaymentChart();
+            
+            // Update current month title
+            const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                              'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            const currentMonthName = monthNames[new Date().getMonth()];
+            const currentYearName = new Date().getFullYear();
+            document.getElementById('currentMonthTitle').textContent = `إحصائيات ${currentMonthName} ${currentYearName}`;
+        }
+
+        function showAddSale() {
+            document.getElementById('addSaleModal').classList.remove('hidden');
+            document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+            updatePreview();
+        }
+
+        function hideAddSale() {
+            document.getElementById('addSaleModal').classList.add('hidden');
+            document.getElementById('saleForm').reset();
+            // Reset to single product row
+            const container = document.getElementById('productsContainer');
+            const rows = container.querySelectorAll('.product-row');
+            for (let i = 1; i < rows.length; i++) {
+                rows[i].remove();
+            }
+        }
+
+        function showSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('singlePrice').value = settings.singlePrice;
+            document.getElementById('bundlePrice').value = settings.bundlePrice;
+            document.getElementById('shopifyFee').value = settings.shopifyFee;
+            document.getElementById('knetFee').value = settings.knetFee;
+            document.getElementById('visaFee').value = settings.visaFee;
+            
+            const lastReset = settings.lastReset ? new Date(settings.lastReset).toLocaleDateString('ar-SA') : 'لم يتم بعد';
+            document.getElementById('lastResetDate').textContent = `آخر إعادة تعيين: ${lastReset}`;
+        }
+
+        function hideSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function confirmReset() {
+            document.getElementById('resetModal').classList.remove('hidden');
+        }
+
+        function hideReset() {
+            document.getElementById('resetModal').classList.add('hidden');
+        }
+
+        function resetAllData() {
+            sales = [];
+            settings.lastReset = new Date().toISOString();
+            
+            localStorage.setItem('upperSales', JSON.stringify(sales));
+            localStorage.setItem('upperSettings', JSON.stringify(settings));
+            
+            loadSales();
+            updateStats();
+            hideReset();
+            hideSettings();
+            
+            alert('تم مسح جميع البيانات بنجاح!');
+        }
+
+        function addSale(products, paymentMethod, date, customInvoiceNumber = null) {
+            const calc = calculateSale(products, paymentMethod);
+            
+            const invoiceNumber = customInvoiceNumber || (sales.length + 1).toString().padStart(4, '0');
+            
+            const newSale = {
+                id: Date.now(),
+                invoiceNumber: invoiceNumber,
+                date: date,
+                products: products,
+                paymentMethod: paymentMethod,
+                basePrice: calc.basePrice,
+                shopifyFees: calc.shopifyFees,
+                paymentFees: calc.paymentFees,
+                totalFees: calc.totalFees,
+                netProfit: calc.netProfit,
+                totalPieces: calc.totalPieces,
+                whiteCount: calc.whiteCount,
+                blackCount: calc.blackCount
+            };
+            
+            sales.push(newSale);
+            localStorage.setItem('upperSales', JSON.stringify(sales));
+            
+            // Update inventory
+            updateInventoryFromSale(products);
+            
+            loadSales();
+            updateStats();
+            hideAddSale();
+        }
+
+        function deleteSale(id) {
+            if (confirm('هل أنت متأكد من حذف هذه المبيعة؟\n\nسيتم إرجاع الكمية المباعة إلى المخزون.')) {
+                // Find the sale to get products info before deletion
+                const saleToDelete = sales.find(s => s.id === id);
+                
+                if (saleToDelete) {
+                    // Return products to inventory
+                    saleToDelete.products.forEach(saleProduct => {
+                        const inventoryProduct = inventory.find(p => p.color === saleProduct.color);
+                        
+                        if (inventoryProduct) {
+                            const quantityToReturn = saleProduct.type === 'single' ? 
+                                saleProduct.quantity : saleProduct.quantity * 3;
+                            
+                            inventoryProduct.quantity += quantityToReturn;
+                        }
+                    });
+                    
+                    // Save updated inventory
+                    localStorage.setItem('upperInventory', JSON.stringify(inventory));
+                    updateCurrentInventoryDisplay();
+                    checkInventoryAlerts();
+                }
+                
+                // Remove sale from sales array
+                sales = sales.filter(s => s.id !== id);
+                localStorage.setItem('upperSales', JSON.stringify(sales));
+                loadSales();
+                updateStats();
+                
+                // Refresh inventory table if open
+                if (!document.getElementById('inventoryModal').classList.contains('hidden')) {
+                    loadInventoryTable();
+                }
+                
+                // Refresh invoices view if open
+                if (!document.getElementById('invoicesModal').classList.contains('hidden')) {
+                    filterInvoices();
+                }
+                
+                alert('✅ تم حذف الفاتورة وإرجاع الكمية إلى المخزون بنجاح!');
+            }
+        }
+
+        function saveSettings() {
+            settings.singlePrice = parseFloat(document.getElementById('singlePrice').value);
+            settings.bundlePrice = parseFloat(document.getElementById('bundlePrice').value);
+            settings.shopifyFee = parseFloat(document.getElementById('shopifyFee').value);
+            settings.knetFee = parseFloat(document.getElementById('knetFee').value);
+            settings.visaFee = parseFloat(document.getElementById('visaFee').value);
+            
+            localStorage.setItem('upperSettings', JSON.stringify(settings));
+            hideSettings();
+            updateStats();
+        }
+
+        function toggleTheme() {
+            settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', settings.theme);
+            document.getElementById('themeIcon').textContent = settings.theme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('upperSettings', JSON.stringify(settings));
+        }
+
+        function showReports() {
+            document.getElementById('reportsModal').classList.remove('hidden');
+            populateYearOptions();
+            setDefaultReportDates();
+            updateReports();
+        }
+
+        function hideReports() {
+            document.getElementById('reportsModal').classList.add('hidden');
+            if (financialChart) {
+                financialChart.destroy();
+                financialChart = null;
+            }
+        }
+
+        function populateYearOptions() {
+            const yearSelect = document.getElementById('reportYear');
+            const years = [...new Set(sales.map(sale => new Date(sale.date).getFullYear()))].sort((a, b) => b - a);
+            
+            yearSelect.innerHTML = '<option value="all">جميع السنوات</option>';
+            years.forEach(year => {
+                yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+        }
+
+        function setDefaultReportDates() {
+            document.getElementById('reportMonth').value = 'all';
+            document.getElementById('reportYear').value = 'all';
+        }
+
+        function getFilteredSales() {
+            const selectedMonth = document.getElementById('reportMonth').value;
+            const selectedYear = document.getElementById('reportYear').value;
+            
+            return sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                const saleMonth = saleDate.getMonth();
+                const saleYear = saleDate.getFullYear();
+                
+                const monthMatch = selectedMonth === 'all' || saleMonth === parseInt(selectedMonth);
+                const yearMatch = selectedYear === 'all' || saleYear === parseInt(selectedYear);
+                
+                return monthMatch && yearMatch;
+            });
+        }
+
+        function updateReports() {
+            const filteredSales = getFilteredSales();
+            
+            const totalRevenue = filteredSales.reduce((sum, s) => sum + s.basePrice, 0);
+            const totalProfit = filteredSales.reduce((sum, s) => sum + s.netProfit, 0);
+            const totalExpenses = filteredSales.reduce((sum, s) => sum + s.totalFees, 0);
+            const totalPieces = filteredSales.reduce((sum, s) => sum + s.totalPieces, 0);
+
+            // Best selling day
+            const salesByDate = {};
+            filteredSales.forEach(sale => {
+                if (!salesByDate[sale.date]) {
+                    salesByDate[sale.date] = { count: 0, revenue: 0 };
+                }
+                salesByDate[sale.date].count++;
+                salesByDate[sale.date].revenue += sale.basePrice;
+            });
+
+            let bestDay = { date: 'لا يوجد', revenue: 0 };
+            Object.keys(salesByDate).forEach(date => {
+                if (salesByDate[date].revenue > bestDay.revenue) {
+                    bestDay = { date, revenue: salesByDate[date].revenue };
+                }
+            });
+
+            // Update reports display
+            document.getElementById('reportRevenue').textContent = `${totalRevenue.toFixed(3)} د.ك`;
+            document.getElementById('reportProfit').textContent = `${totalProfit.toFixed(3)} د.ك`;
+            document.getElementById('reportExpenses').textContent = `${totalExpenses.toFixed(3)} د.ك`;
+            document.getElementById('reportPieces').textContent = totalPieces;
+            document.getElementById('bestDay').textContent = bestDay.date;
+            document.getElementById('bestDayRevenue').textContent = `${bestDay.revenue.toFixed(3)} د.ك`;
+            
+            const avgOrderValue = filteredSales.length > 0 ? (totalRevenue / filteredSales.length) : 0;
+            document.getElementById('avgOrderValue').textContent = `${avgOrderValue.toFixed(3)} د.ك`;
+            
+            // Update financial chart
+            updateFinancialChart(totalRevenue, totalProfit, totalExpenses);
+        }
+
+        function updateFinancialChart(revenue, profit, expenses) {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            
+            if (financialChart) {
+                financialChart.destroy();
+            }
+            
+            // Calculate break-even point (assuming fixed costs are 0 for simplicity)
+            const breakEven = expenses > 0 ? expenses : 0;
+            
+            financialChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['المبيعات', 'الأرباح', 'المصاريف', 'نقطة التعادل'],
+                    datasets: [{
+                        label: 'المبلغ (د.ك)',
+                        data: [revenue, profit, expenses, breakEven],
+                        backgroundColor: [
+                            '#3B82F6', // Blue for revenue
+                            '#10B981', // Green for profit
+                            '#EF4444', // Red for expenses
+                            '#F59E0B'  // Orange for break-even
+                        ],
+                        borderColor: [
+                            '#2563EB',
+                            '#059669',
+                            '#DC2626',
+                            '#D97706'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(3) + ' د.ك';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(3) + ' د.ك';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showInvoice(saleId) {
+            const sale = sales.find(s => s.id === saleId);
+            if (!sale) return;
+
+            // Fill invoice details
+            document.getElementById('invoiceNum').textContent = `#${sale.invoiceNumber || sale.id}`;
+            document.getElementById('invoiceDate').textContent = sale.date;
+            document.getElementById('invoicePayment').textContent = sale.paymentMethod === 'knet' ? 'K-Net' : 'Visa';
+
+            // Fill products table
+            const productsTable = document.getElementById('invoiceProducts');
+            productsTable.innerHTML = '';
+
+            sale.products.forEach(product => {
+                const colorName = product.color === 'white' ? 'أبيض' : 'أسود';
+                const typeName = product.type === 'single' ? 'قطعة واحدة' : 'باندل (3 قطع)';
+                const price = product.type === 'single' ? settings.singlePrice : settings.bundlePrice;
+                const total = price * product.quantity;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="text-right py-2">بوكسر ${colorName} - ${typeName}</td>
+                    <td class="text-center py-2">${product.quantity}</td>
+                    <td class="text-center py-2">${price.toFixed(3)} د.ك</td>
+                    <td class="text-center py-2 font-semibold">${total.toFixed(3)} د.ك</td>
+                `;
+                productsTable.appendChild(row);
+            });
+
+            // Fill totals
+            document.getElementById('invoiceSubtotal').textContent = `${sale.basePrice.toFixed(3)} د.ك`;
+            document.getElementById('invoiceShopifyRate').textContent = settings.shopifyFee;
+            document.getElementById('invoiceShopifyFee').textContent = `${sale.shopifyFees.toFixed(3)} د.ك`;
+            
+            const paymentRate = sale.paymentMethod === 'knet' ? settings.knetFee : settings.visaFee;
+            document.getElementById('invoicePaymentRate').textContent = paymentRate;
+            document.getElementById('invoicePaymentFee').textContent = `${sale.paymentFees.toFixed(3)} د.ك`;
+            document.getElementById('invoiceTotalFees').textContent = `${sale.totalFees.toFixed(3)} د.ك`;
+            document.getElementById('invoiceNetProfit').textContent = `${sale.netProfit.toFixed(3)} د.ك`;
+
+            // Show modal
+            document.getElementById('invoiceModal').classList.remove('hidden');
+        }
+
+        function hideInvoice() {
+            document.getElementById('invoiceModal').classList.add('hidden');
+        }
+
+        function printInvoice() {
+            const invoiceContent = document.getElementById('invoiceModal').querySelector('.bg-white').innerHTML;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>فاتورة UPPER</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+                        * { font-family: 'Cairo', sans-serif; }
+                        body { margin: 20px; background: white; }
+                        .bg-blue-600, .bg-gray-300 { display: none; }
+                        @media print {
+                            .bg-blue-600, .bg-gray-300 { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${invoiceContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function exportToExcel() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            populateExportYearOptions();
+        }
+
+        function populateExportYearOptions() {
+            const yearSelect = document.getElementById('exportYear');
+            const years = [...new Set(sales.map(sale => new Date(sale.date).getFullYear()))].sort((a, b) => b - a);
+            
+            yearSelect.innerHTML = '<option value="all">جميع السنوات</option>';
+            years.forEach(year => {
+                yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+        }
+
+        function performExport() {
+            const selectedMonth = document.getElementById('exportMonth').value;
+            const selectedYear = document.getElementById('exportYear').value;
+            
+            // Filter sales based on selection
+            let filteredSales = sales;
+            
+            if (selectedMonth !== 'all' || selectedYear !== 'all') {
+                filteredSales = sales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    const saleMonth = saleDate.getMonth();
+                    const saleYear = saleDate.getFullYear();
+                    
+                    const monthMatch = selectedMonth === 'all' || saleMonth === parseInt(selectedMonth);
+                    const yearMatch = selectedYear === 'all' || saleYear === parseInt(selectedYear);
+                    
+                    return monthMatch && yearMatch;
+                });
+            }
+            
+            if (filteredSales.length === 0) {
+                alert('لا توجد مبيعات للفترة المحددة!');
+                return;
+            }
+            
+            // Create Excel-like CSV format
+            let csvContent = '\uFEFF'; // BOM for UTF-8
+            csvContent += 'رقم الفاتورة,التاريخ,المنتجات,طريقة الدفع,المبلغ الإجمالي,إجمالي الرسوم,صافي الربح\n';
+            
+            filteredSales.forEach(sale => {
+                const productsText = sale.products.map(p => {
+                    const colorName = p.color === 'white' ? 'أبيض' : p.color === 'black' ? 'أسود' : p.color;
+                    const typeName = p.type === 'single' ? 'قطعة واحدة' : 'باندل (3 قطع)';
+                    return `${p.quantity} بوكسر ${colorName} - ${typeName}`;
+                }).join(' + ');
+                
+                const paymentText = sale.paymentMethod === 'knet' ? 'K-Net' : 'Visa';
+                
+                csvContent += `#${sale.invoiceNumber || sale.id},${sale.date},"${productsText}",${paymentText},${sale.basePrice.toFixed(3)},${sale.totalFees.toFixed(3)},${sale.netProfit.toFixed(3)}\n`;
+            });
+            
+            // Generate filename based on selection
+            let filename = 'upper_sales_report';
+            if (selectedMonth !== 'all' && selectedYear !== 'all') {
+                const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                                  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                filename += `_${monthNames[parseInt(selectedMonth)]}_${selectedYear}`;
+            } else if (selectedYear !== 'all') {
+                filename += `_${selectedYear}`;
+            }
+            filename += '.csv';
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            hideExportModal();
+            
+            // Show success message
+            const monthText = selectedMonth === 'all' ? 'جميع الشهور' : 
+                             ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                              'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'][parseInt(selectedMonth)];
+            const yearText = selectedYear === 'all' ? 'جميع السنوات' : selectedYear;
+            
+            alert(`✅ تم تصدير ${filteredSales.length} فاتورة بنجاح!\nالفترة: ${monthText} - ${yearText}`);
+        }
+
+        function hideExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        // Inventory Management Functions
+        function showInventory() {
+            document.getElementById('inventoryModal').classList.remove('hidden');
+            loadInventoryTable();
+        }
+
+        function hideInventory() {
+            document.getElementById('inventoryModal').classList.add('hidden');
+        }
+
+        function loadInventoryTable() {
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+
+            inventory.forEach(product => {
+                const row = document.createElement('tr');
+                
+                const colorNames = {
+                    'white': 'أبيض',
+                    'black': 'أسود',
+                    'gray': 'رمادي',
+                    'blue': 'أزرق',
+                    'red': 'أحمر'
+                };
+
+                const statusClass = product.quantity < 100 ? 'text-red-600 font-semibold' : 'text-green-600';
+                const statusText = product.quantity < 100 ? '⚠️ مخزون منخفض' : '✅ متوفر';
+
+                const imageDisplay = product.image ? 
+                    `<img src="${product.image}" alt="${product.name}" class="w-12 h-12 object-cover rounded-lg">` :
+                    '<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">🩲</div>';
+                
+                const availableBundles = Math.floor(product.quantity / 3);
+                const bundleStatus = availableBundles > 0 ? `${availableBundles} باندل` : 'غير متاح';
+                const bundleClass = availableBundles > 0 ? 'text-green-600' : 'text-red-600';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-4">${imageDisplay}</td>
+                    <td class="px-4 py-4 font-medium">${product.name}</td>
+                    <td class="px-4 py-4">${colorNames[product.color] || product.color}</td>
+                    <td class="px-4 py-4 font-bold">${product.quantity} قطعة</td>
+                    <td class="px-4 py-4 ${bundleClass} font-semibold">${bundleStatus}</td>
+                    <td class="px-4 py-4 ${statusClass}">${statusText}</td>
+                    <td class="px-4 py-4">
+                        <button onclick="editProduct(${product.id})" class="text-blue-600 hover:text-blue-900 ml-2 text-xs bg-blue-100 px-2 py-1 rounded">تعديل</button>
+                        <button onclick="deleteProduct(${product.id})" class="text-red-600 hover:text-red-900 text-xs bg-red-100 px-2 py-1 rounded">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function addNewProduct(name, color, quantity) {
+            const newProduct = {
+                id: Date.now(),
+                name: name,
+                color: color,
+                quantity: parseInt(quantity),
+                image: null
+            };
+            
+            inventory.push(newProduct);
+            localStorage.setItem('upperInventory', JSON.stringify(inventory));
+            loadInventoryTable();
+            updateCurrentInventoryDisplay();
+            checkInventoryAlerts();
+        }
+
+        function editProduct(productId) {
+            const product = inventory.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductColor').value = product.color;
+            document.getElementById('editProductQuantity').value = product.quantity;
+
+            // Display current image
+            const imageContainer = document.getElementById('currentProductImage');
+            if (product.image) {
+                imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg">`;
+            } else {
+                imageContainer.innerHTML = '🩲';
+                imageContainer.className = 'w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl';
+            }
+
+            document.getElementById('editProductModal').classList.remove('hidden');
+        }
+
+        function hideEditProduct() {
+            document.getElementById('editProductModal').classList.add('hidden');
+        }
+
+        function updateProduct(productId, name, color, quantity, image = null) {
+            const productIndex = inventory.findIndex(p => p.id === productId);
+            if (productIndex === -1) return;
+
+            inventory[productIndex] = {
+                ...inventory[productIndex],
+                name: name,
+                color: color,
+                quantity: parseInt(quantity),
+                image: image || inventory[productIndex].image
+            };
+            
+            localStorage.setItem('upperInventory', JSON.stringify(inventory));
+            loadInventoryTable();
+            updateCurrentInventoryDisplay();
+            checkInventoryAlerts();
+            hideEditProduct();
+        }
+
+        function deleteProduct(productId) {
+            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                inventory = inventory.filter(p => p.id !== productId);
+                localStorage.setItem('upperInventory', JSON.stringify(inventory));
+                loadInventoryTable();
+                updateCurrentInventoryDisplay();
+                checkInventoryAlerts();
+            }
+        }
+
+        function updateCurrentInventoryDisplay() {
+            const container = document.getElementById('currentInventory');
+            container.innerHTML = '';
+
+            inventory.slice(0, 4).forEach(product => {
+                const colorNames = {
+                    'white': 'أبيض',
+                    'black': 'أسود',
+                    'gray': 'رمادي',
+                    'blue': 'أزرق',
+                    'red': 'أحمر'
+                };
+
+                const statusClass = product.quantity < 100 ? 'text-red-200' : 'text-white';
+                const warningIcon = product.quantity < 100 ? '⚠️ ' : '';
+
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center';
+                div.innerHTML = `
+                    <span class="text-sm">${warningIcon}${product.name}</span>
+                    <span class="font-bold ${statusClass}">${product.quantity}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkInventoryAlerts() {
+            const alertsContainer = document.getElementById('inventoryAlerts');
+            const lowStockProducts = inventory.filter(p => p.quantity < 100);
+
+            if (lowStockProducts.length > 0) {
+                alertsContainer.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                        ⚠️ تنبيه: ${lowStockProducts.length} منتج بمخزون منخفض (أقل من 100)
+                    </div>
+                `;
+            } else {
+                alertsContainer.innerHTML = '';
+            }
+        }
+
+        function updateInventoryFromSale(products) {
+            products.forEach(saleProduct => {
+                const inventoryProduct = inventory.find(p => p.color === saleProduct.color);
+                
+                if (inventoryProduct) {
+                    const quantityToDeduct = saleProduct.type === 'single' ? 
+                        saleProduct.quantity : saleProduct.quantity * 3;
+                    
+                    inventoryProduct.quantity = Math.max(0, inventoryProduct.quantity - quantityToDeduct);
+                }
+            });
+            
+            localStorage.setItem('upperInventory', JSON.stringify(inventory));
+            updateCurrentInventoryDisplay();
+            checkInventoryAlerts();
+        }
+
+        // Invoices Management Functions
+        function showInvoices() {
+            document.getElementById('invoicesModal').classList.remove('hidden');
+            clearInvoiceFilter();
+            loadAllInvoices();
+        }
+
+        function hideInvoices() {
+            document.getElementById('invoicesModal').classList.add('hidden');
+        }
+
+        function loadAllInvoices() {
+            const filteredSales = [...sales].sort((a, b) => new Date(b.date) - new Date(a.date));
+            displayInvoices(filteredSales);
+            updateInvoicesSummary(filteredSales);
+        }
+
+        function filterInvoices() {
+            const fromDate = document.getElementById('invoiceFromDate').value;
+            const toDate = document.getElementById('invoiceToDate').value;
+
+            let filteredSales = [...sales];
+
+            if (fromDate) {
+                filteredSales = filteredSales.filter(sale => sale.date >= fromDate);
+            }
+
+            if (toDate) {
+                filteredSales = filteredSales.filter(sale => sale.date <= toDate);
+            }
+
+            // Sort by date (newest first)
+            filteredSales.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            displayInvoices(filteredSales);
+            updateInvoicesSummary(filteredSales);
+        }
+
+        function clearInvoiceFilter() {
+            document.getElementById('invoiceFromDate').value = '';
+            document.getElementById('invoiceToDate').value = '';
+            loadAllInvoices();
+        }
+
+        function displayInvoices(invoices) {
+            const tbody = document.getElementById('invoicesTableBody');
+            tbody.innerHTML = '';
+
+            invoices.forEach(sale => {
+                const row = document.createElement('tr');
+                
+                // Format products display
+                let productsDisplay = '';
+                sale.products.forEach(product => {
+                    const colorName = product.color === 'white' ? 'أبيض' : 'أسود';
+                    const typeName = product.type === 'single' ? 'قطعة واحدة' : 'باندل (3 قطع)';
+                    productsDisplay += `${product.quantity} بوكسر ${colorName} - ${typeName}<br>`;
+                });
+                
+                row.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="showInvoice(${sale.id})" class="text-blue-600 hover:text-blue-900 font-medium">#${sale.invoiceNumber || sale.id}</button>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm">${sale.date}</td>
+                    <td class="px-4 py-4 text-sm">${productsDisplay}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm">${sale.paymentMethod === 'knet' ? 'K-Net' : 'Visa'}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">${sale.basePrice.toFixed(3)} د.ك</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${sale.netProfit.toFixed(3)} د.ك</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm">
+                        <button onclick="showInvoice(${sale.id})" class="text-blue-600 hover:text-blue-900 ml-2 text-xs bg-blue-100 px-2 py-1 rounded">عرض</button>
+                        <button onclick="editSale(${sale.id})" class="text-green-600 hover:text-green-900 ml-2 text-xs bg-green-100 px-2 py-1 rounded">تعديل</button>
+                        <button onclick="deleteSale(${sale.id})" class="text-red-600 hover:text-red-900 text-xs bg-red-100 px-2 py-1 rounded">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateInvoicesSummary(invoices) {
+            const count = invoices.length;
+            const total = invoices.reduce((sum, s) => sum + s.basePrice, 0);
+            const fees = invoices.reduce((sum, s) => sum + s.totalFees, 0);
+            const profit = invoices.reduce((sum, s) => sum + s.netProfit, 0);
+
+            document.getElementById('filteredInvoicesCount').textContent = count;
+            document.getElementById('filteredInvoicesTotal').textContent = `${total.toFixed(3)} د.ك`;
+            document.getElementById('filteredInvoicesFees').textContent = `${fees.toFixed(3)} د.ك`;
+            document.getElementById('filteredInvoicesProfit').textContent = `${profit.toFixed(3)} د.ك`;
+        }
+
+        // Edit Sale Functions
+        function editSale(saleId) {
+            const sale = sales.find(s => s.id === saleId);
+            if (!sale) return;
+
+            document.getElementById('editSaleId').value = sale.id;
+            document.getElementById('editInvoiceNumber').value = sale.invoiceNumber || sale.id;
+            document.getElementById('editPaymentMethod').value = sale.paymentMethod;
+            document.getElementById('editSaleDate').value = sale.date;
+
+            // Load products
+            const container = document.getElementById('editProductsContainer');
+            container.innerHTML = '';
+
+            sale.products.forEach(product => {
+                addEditProductRow(product);
+            });
+
+            updateEditPreview();
+            document.getElementById('editSaleModal').classList.remove('hidden');
+        }
+
+        function hideEditSale() {
+            document.getElementById('editSaleModal').classList.add('hidden');
+        }
+
+        function addEditProduct() {
+            addEditProductRow();
+        }
+
+        function addEditProductRow(product = null) {
+            const container = document.getElementById('editProductsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'edit-product-row grid grid-cols-1 md:grid-cols-4 gap-3 mb-3 p-3 border rounded-lg';
+            newRow.style.borderColor = 'var(--border-color)';
+            
+            newRow.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium mb-1">اللون</label>
+                    <select class="edit-product-color w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                        <option value="">اختار</option>
+                        <option value="white" ${product && product.color === 'white' ? 'selected' : ''}>أبيض</option>
+                        <option value="black" ${product && product.color === 'black' ? 'selected' : ''}>أسود</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">النوع</label>
+                    <select class="edit-product-type w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" required>
+                        <option value="single" ${product && product.type === 'single' ? 'selected' : ''}>قطعة واحدة</option>
+                        <option value="bundle" ${product && product.type === 'bundle' ? 'selected' : ''}>3 قطع (باندل)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">الكمية</label>
+                    <input type="number" class="edit-product-quantity w-full px-2 py-1 border rounded text-sm bg-card" style="border-color: var(--border-color)" min="1" value="${product ? product.quantity : 1}" required>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="removeEditProduct(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">حذف</button>
+                </div>
+            `;
+            
+            container.appendChild(newRow);
+            attachEditProductEvents(newRow);
+        }
+
+        function removeEditProduct(button) {
+            const rows = document.querySelectorAll('.edit-product-row');
+            if (rows.length > 1) {
+                button.closest('.edit-product-row').remove();
+                updateEditPreview();
+            }
+        }
+
+        function attachEditProductEvents(row) {
+            const inputs = row.querySelectorAll('.edit-product-color, .edit-product-type, .edit-product-quantity');
+            inputs.forEach(input => {
+                input.addEventListener('change', updateEditPreview);
+                input.addEventListener('input', updateEditPreview);
+            });
+        }
+
+        function getEditProductsFromForm() {
+            const products = [];
+            const rows = document.querySelectorAll('.edit-product-row');
+            let hasError = false;
+            
+            // First, collect all products to calculate total required pieces per color
+            const tempProducts = [];
+            rows.forEach(row => {
+                const color = row.querySelector('.edit-product-color').value;
+                const type = row.querySelector('.edit-product-type').value;
+                const quantity = parseInt(row.querySelector('.edit-product-quantity').value) || 0;
+                
+                if (quantity > 0 && color !== '') {
+                    tempProducts.push({ color, type, quantity });
+                }
+            });
+            
+            // Calculate total required pieces per color
+            const requiredByColor = {};
+            tempProducts.forEach(product => {
+                if (!requiredByColor[product.color]) {
+                    requiredByColor[product.color] = 0;
+                }
+                
+                const piecesNeeded = product.type === 'single' ? product.quantity : product.quantity * 3;
+                requiredByColor[product.color] += piecesNeeded;
+            });
+            
+            // Check inventory availability for each color
+            for (const color in requiredByColor) {
+                const inventoryProduct = inventory.find(p => p.color === color);
+                const colorName = color === 'white' ? 'الأبيض' : 'الأسود';
+                const totalRequired = requiredByColor[color];
+                const available = inventoryProduct ? inventoryProduct.quantity : 0;
+                
+                if (available < totalRequired) {
+                    const availableBundles = Math.floor(available / 3);
+                    const availableSingles = available;
+                    
+                    alert(`❌ المخزون غير كافي للون ${colorName}!\n\nالمطلوب إجمالي: ${totalRequired} قطعة\nالمتاح: ${available} قطعة فقط\n\nيمكنك طلب:\n• ${availableSingles} قطعة منفردة\n• ${availableBundles} باندل (${availableBundles * 3} قطعة)\n\nيرجى تعديل الكمية.`);
+                    hasError = true;
+                    break;
+                }
+            }
+            
+            // If no errors, return the products
+            if (!hasError) {
+                return tempProducts;
+            }
+            
+            // Return empty array if there's an error to prevent form submission
+            return [];
+        }
+
+        function updateEditPreview() {
+            const products = getEditProductsFromForm();
+            const paymentMethod = document.getElementById('editPaymentMethod').value;
+
+            if (products.length === 0) return;
+
+            const calc = calculateSale(products, paymentMethod);
+
+            document.getElementById('editPreviewTotal').textContent = `${calc.basePrice.toFixed(3)} د.ك`;
+            document.getElementById('editPreviewShopify').textContent = `${calc.shopifyFees.toFixed(3)} د.ك`;
+            document.getElementById('editPreviewPayment').textContent = `${calc.paymentFees.toFixed(3)} د.ك`;
+            document.getElementById('editPreviewTotalFees').textContent = `${calc.totalFees.toFixed(3)} د.ك`;
+            document.getElementById('editPreviewNet').textContent = `${calc.netProfit.toFixed(3)} د.ك`;
+        }
+
+        function updateSale(saleId, products, paymentMethod, date, invoiceNumber) {
+            const calc = calculateSale(products, paymentMethod);
+            
+            const saleIndex = sales.findIndex(s => s.id === saleId);
+            if (saleIndex === -1) return;
+
+            sales[saleIndex] = {
+                ...sales[saleIndex],
+                invoiceNumber: invoiceNumber,
+                date: date,
+                products: products,
+                paymentMethod: paymentMethod,
+                basePrice: calc.basePrice,
+                shopifyFees: calc.shopifyFees,
+                paymentFees: calc.paymentFees,
+                totalFees: calc.totalFees,
+                netProfit: calc.netProfit,
+                totalPieces: calc.totalPieces,
+                whiteCount: calc.whiteCount,
+                blackCount: calc.blackCount
+            };
+            
+            localStorage.setItem('upperSales', JSON.stringify(sales));
+            
+            loadSales();
+            updateStats();
+            hideEditSale();
+            
+            // Refresh invoices view if open
+            if (!document.getElementById('invoicesModal').classList.contains('hidden')) {
+                filterInvoices();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('saleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const products = getProductsFromForm();
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const date = document.getElementById('saleDate').value;
+            const customInvoiceNumber = document.getElementById('invoiceNumber').value.trim();
+            
+            if (products.length === 0) {
+                alert('يرجى إضافة منتج واحد على الأقل');
+                return;
+            }
+            
+            addSale(products, paymentMethod, date, customInvoiceNumber || null);
+        });
+
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+        });
+
+        document.getElementById('editSaleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const saleId = parseInt(document.getElementById('editSaleId').value);
+            const products = getEditProductsFromForm();
+            const paymentMethod = document.getElementById('editPaymentMethod').value;
+            const date = document.getElementById('editSaleDate').value;
+            const invoiceNumber = document.getElementById('editInvoiceNumber').value.trim();
+            
+            if (products.length === 0) {
+                alert('يرجى إضافة منتج واحد على الأقل');
+                return;
+            }
+            
+            updateSale(saleId, products, paymentMethod, date, invoiceNumber);
+        });
+
+        // Update edit preview on payment method change
+        document.getElementById('editPaymentMethod').addEventListener('change', updateEditPreview);
+
+        // Inventory form handlers
+        document.getElementById('addProductForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('productName').value;
+            const color = document.getElementById('productColor').value;
+            const quantity = document.getElementById('productQuantity').value;
+            
+            addNewProduct(name, color, quantity);
+            this.reset();
+            document.getElementById('productQuantity').value = 100; // Reset to default
+        });
+
+        document.getElementById('editProductForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const productId = parseInt(document.getElementById('editProductId').value);
+            const name = document.getElementById('editProductName').value;
+            const color = document.getElementById('editProductColor').value;
+            const quantity = document.getElementById('editProductQuantity').value;
+            
+            // Handle image upload
+            const imageInput = document.getElementById('productImageInput');
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    updateProduct(productId, name, color, quantity, e.target.result);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                updateProduct(productId, name, color, quantity);
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply saved theme
+            document.documentElement.setAttribute('data-theme', settings.theme);
+            document.getElementById('themeIcon').textContent = settings.theme === 'light' ? '🌙' : '☀️';
+            
+            initCharts();
+            loadSales();
+            updateStats();
+            updateCurrentInventoryDisplay();
+            checkInventoryAlerts();
+            
+            // Attach events to initial product row
+            attachProductEvents(document.querySelector('.product-row'));
+            
+            // Update preview on payment method change
+            document.getElementById('paymentMethod').addEventListener('change', updatePreview);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fab63476c87dd0',t:'MTc1Nzk2NjQ0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
